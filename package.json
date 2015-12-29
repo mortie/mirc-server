@@ -1,0 +1,17 @@
+{
+  "name": "mirc-server",
+  "version": "1.0.0",
+  "description": "",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Martin Dørum Nygaard <martid0311@gmail.com> (www.mort.coffee)",
+  "license": "ISC",
+  "dependencies": {
+    "babel-preset-es2015": "^6.3.13",
+    "babel-register": "^6.3.13",
+    "express": "^4.13.3",
+    "irc": "^0.4.0"
+  }
+}
