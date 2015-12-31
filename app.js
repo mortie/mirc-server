@@ -80,7 +80,7 @@ function init() {
 				if (network)
 					return cb("Network "+obj.host+" already connected.");
 
-				networks[obj.host] = new irlib.IRCNetwork(obj.host, obj.nick);
+				networks[obj.host] = new irclib.IRCNetwork(obj.host, obj.nick);
 				cb();
 				break;
 
@@ -109,6 +109,7 @@ function init() {
 				cb();
 				break;
 
+			//host, channel, message
 			case "channel_say":
 				arg("string", obj, "host");
 				arg("string", obj, "channel");

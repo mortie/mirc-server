@@ -39,7 +39,7 @@ export class IRCChannel {
 	}
 
 	part() {
-		this.network.part(this._name);
+		this.network.client.part(this.name);
 	}
 
 	serialize() {
