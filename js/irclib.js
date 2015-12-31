@@ -89,10 +89,15 @@ export class IRCNetwork {
 	}
 
 	serialize() {
+		let channels = [];
+		for (let i in this.channels) {
+			channels.push(this.channels[i].serialize());
+		}
+
 		return {
 			host: this.host,
 			nick: this.nick,
-			channels: this.channels.map(chan => chan.serialize()),
+			channels: channels,
 			options: this.options
 		};
 	}

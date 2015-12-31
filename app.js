@@ -18,8 +18,8 @@ function deinit() {
 
 		for (let i in networks) {
 			let network = networks[i];
-			promises.push(dir.sub(networks.name).write(
-				JSON.stringify(networks.serialize())
+			promises.push(dir.sub(network.host).write(
+				JSON.stringify(network.serialize())
 			));
 		}
 
@@ -113,20 +113,22 @@ function init() {
 			case "channel_say":
 				arg("string", obj, "host");
 				arg("string", obj, "channel");
-				arg("string", obj, "message");
+				arg("string", obj, "msg");
 
 				if (!channel)
 					return cb("Channel "+obj.channel+" is not joined.");
 
-				channel.say(obj.message);
+				channel.say(obj.msg);
 				cb();
 				break;
 			}
 		} catch (err) {
-			if (err.isArgError)
-				cb(err.message);
-			else
+			if (err.isArgError) {
+				cb(err.msg);
+			} else {
+				cb(err.toString());
 				throw err;
+			}
 		}
 	});
 }
@@ -145,8 +147,10 @@ export function start(path) {
 }
 
 //Save state on exit
-process.on("beforeExit", () => {
+process.on("SIGINT", onexit);
+process.on("SIGTERM", onexit);
+function onexit() {
 	deinit().then(() => {
 		process.exit();
 	});
-});
+}
