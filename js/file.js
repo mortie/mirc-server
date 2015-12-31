@@ -1,7 +1,7 @@
 var fs = require("fs");
 var pathlib = require("path");
 
-export default class {
+export default class File {
 	constructor(path) {
 		this._path = path;
 	}
@@ -40,6 +40,10 @@ export default class {
 					resolve();
 			});
 		});
+	}
+
+	sub(subPath) {
+		return new File(pathlib.join(this.path, subPath));
 	}
 
 	createReadStream(options) {
@@ -101,7 +105,7 @@ export default class {
 				if (err)
 					reject(err);
 				else
-					resolve(files.map(file => new File(`${this.path}/file`)));
+					resolve(files.map(file => this.sub(file)));
 			});
 		});
 	}

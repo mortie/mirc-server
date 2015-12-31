@@ -1,11 +1,14 @@
+import * as irc from "irc";
+
 export class IRCUser {
 	constructor(name, network) {
 	}
 }
 
 export class IRCChannel {
-	constructor(name, network) {
+	constructor(name, network, pass) {
 		this.name = name;
+		this.pass = pass;
 		this.network = network;
 		this.users = {};
 
@@ -30,9 +33,9 @@ export class IRCChannel {
 
 	join(pass) {
 		if (pass)
-			this.network.client.join(this._name+" "+pass);
+			this.network.client.join(this.name+" "+pass);
 		else
-			this.network.client.join(this._name);
+			this.network.client.join(this.name);
 	}
 
 	part() {
@@ -40,37 +43,70 @@ export class IRCChannel {
 	}
 
 	serialize() {
-		return JSON.stringify({
-			name: this.name
-		});
+		return {
+			name: this.name,
+			pass: this.pass
+		};
+	}
+
+	static deserialize(obj, network) {
+		return new IRCChannel(obj.name, network, obj.pass);
 	}
 }
 
 export class IRCNetwork {
-	constructor(host, nick, channels, options) {
+	constructor(host, nick, options) {
 		this.host = host;
 		this.nick = nick;
-		this.channels = channels;
+		this.channels = {};
 
-		//Having channels in options here wouldn't really work would it
+		this.options = options;
 		if (options)
-			options.channels = null;
+			this.options.channels = [];
 
 		this.client = new irc.Client(host, nick, options);
-	}
 
-	serialize() {
-		return JSON.stringify({
-			host: this.host,
-			nick: this.nick,
-			channels: this.channels.map(chan => chan.name),
-			options: this.options
+		this.client.on("error", (err) => {
+			console.log("irc error");
+			console.trace(err);
 		});
 	}
 
-	static deserialize(str) {
-		var obj = JSON.parse(str);
-		var channels = obj.channels.map(name => new IRCChannel(name, this));
-		return new IRCChannel(obj.host, obj.nick, channels);
+	joinChannel(chan) {
+		this.channels[chan.name] = chan;
+		chan.join();
+	}
+
+	partChannel(name) {
+		if (this.channels[name])
+			this.channels[name].part();
+
+		delete this.channels[name];
+	}
+
+	disconnect() {
+		this.client.disconnect();
+	}
+
+	serialize() {
+		return {
+			host: this.host,
+			nick: this.nick,
+			channels: this.channels.map(chan => chan.serialize()),
+			options: this.options
+		};
+	}
+
+	static deserialize(obj) {
+		let network = new IRCNetwork(obj.host, obj.nick, obj.options);
+
+		network.client.addListener("registered", () => {
+			obj.channels.forEach((obj) => {
+				var chan = IRCChannel.deserialize(obj, network);
+				network.joinChannel(chan);
+			});
+		});
+
+		return network;
 	}
 }
