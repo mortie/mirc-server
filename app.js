@@ -5,11 +5,16 @@ import File from "./js/file.js";
 
 process.on("unhandledRejection", (err) => {
 	console.trace(err);
+	process.exit(1);
 });
 
 process.on("uncaughtException", (err) => {
 	console.trace(err);
+	process.exit(1);
 });
+
+process.on("SIGTERM", deinit);
+process.on("SIGINT", deinit);
 
 let conf = JSON.parse(fs.readFileSync("conf.json"));
 
@@ -38,6 +43,38 @@ comm.on("message", (name, obj, cb) => {
 	}
 });
 
-controller.deserialize(JSON.parse(fs.readFileSync("db.json"))).then(() => {
-	comm.init();
-});
+let dir = new File("db");
+dir.mkdir().then(init);
+let db = {
+	networks: dir.sub("networks.json")
+}
+
+function deinit() {
+	db.networks.write(JSON.stringify(controller.serialize())).then(() => {
+		process.exit();
+	});
+}
+
+function init() {
+	//Create all db files
+	let promises = Object.keys(db).map((key) => {
+		return new Promise((resolve, reject) => {
+			db[key].create().then(resolve, reject);
+		});
+	});
+
+	//Init
+	Promise.all(promises).then(() => {
+		db.networks.read().then((str) => {
+			let networks;
+			if (str.length > 0)
+				networks = JSON.parse(str);
+			else
+				networks = [];
+
+			controller.deserialize(networks).then(() => {
+				comm.init();
+			});
+		});
+	});
+}

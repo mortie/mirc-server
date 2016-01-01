@@ -88,7 +88,7 @@ export default class IRCController extends EventListener {
 			});
 		}
 
-		return netwoks;
+		return networks;
 	}
 
 	deserialize(networks) {

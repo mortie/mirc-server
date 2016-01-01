@@ -16,8 +16,8 @@ export default class File {
 
 	create() {
 		return new Promise((resolve, reject) => {
-			fs.open(this.path, "w", (err, fd) => {
-				if (err) {
+			fs.open(this.path, "a", (err, fd) => {
+				if (err && err.code !== "EEXIST") {
 					reject(err);
 				} else {
 					fs.close(fd, (err) => {
@@ -34,7 +34,7 @@ export default class File {
 	mkdir() {
 		return new Promise((resolve, reject) => {
 			fs.mkdir(this.path, (err) => {
-				if (err)
+				if (err && err.code !== "EEXIST")
 					reject(err);
 				else
 					resolve();
@@ -117,6 +117,17 @@ export default class File {
 					reject(err);
 				else
 					resolve(res);
+			});
+		});
+	}
+
+	access(mode = fs.F_OK) {
+		return new Promise((resolve, reject) => {
+			fs.access(this.path, mode, (err) => {
+				if (err)
+					resolve(false);
+				else
+					resolve(true);
 			});
 		});
 	}

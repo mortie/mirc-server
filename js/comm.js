@@ -44,7 +44,7 @@ class Keyring {
 	}
 
 	createKey() {
-		return crypto.randomBytes(64).toString("hex");
+		return crypto.randomBytes(8).toString("hex");
 	}
 
 	addKey() {
@@ -90,7 +90,7 @@ export default class Comm extends EventListener {
 
 		//Login key validation
 		if (args[0] !== "login" && !this.keyring.isKeyValid(body.key)) {
-			return res.error("Not logged in.");
+			return res.error("Invalid key.");
 		}
 
 		switch (args[0]) {
@@ -99,7 +99,7 @@ export default class Comm extends EventListener {
 				let key = this.keyring.addKey();
 				res.json({ key: key });
 			} else {
-				res.error("Invalid key.");
+				res.error("Invalid password.");
 			}
 			break;
 
