@@ -20,11 +20,18 @@ let conf = JSON.parse(fs.readFileSync("conf.json"));
 
 let controller = new IRCController();
 
+setTimeout(() => controller.getState(), 10000);
+
 let comm = new Comm(conf.port, conf.pass);
 comm.on("message", (name, obj, cb) => {
 	switch (name) {
 	case "network_connect":
-		controller.network_connect(obj.host, obj.nick).then(cb, cb);
+		let opts = {};
+		obj.opts = obj.opts || {};
+		Object.keys(conf.opts).forEach(key => {
+			opts[key] = obj.opts[key] || conf.opts[key]
+		});
+		controller.network_connect(obj.host, obj.nick, opts).then(cb, cb);
 		break;
 	case "network_disconnect":
 		controller.network_disconnect(obj.host).then(cb, cb);
@@ -38,6 +45,9 @@ comm.on("message", (name, obj, cb) => {
 	case "channel_say":
 		controller.channel_say(obj.host, obj.chan, obj.msg).then(cb, cb);
 		break;
+	case "state":
+		controller.getState().then(res => cb(null, res)).catch(cb);
+		break;
 	default:
 		cb("No such method: "+name);
 	}
@@ -50,7 +60,7 @@ let db = {
 }
 
 function deinit() {
-	db.networks.write(JSON.stringify(controller.serialize())).then(() => {
+	db.networks.write(JSON.stringify(controller.serialize(), null, 4)).then(() => {
 		process.exit();
 	});
 }
@@ -72,7 +82,7 @@ function init() {
 			else
 				networks = [];
 
-			controller.deserialize(networks).then(() => {
+			controller.deserialize(networks, conf.opts).then(() => {
 				comm.init();
 			});
 		});

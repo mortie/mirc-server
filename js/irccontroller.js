@@ -19,6 +19,11 @@ export default class IRCController extends EventListener {
 				this.emit("event", "network_connect", host);
 				resolve();
 			});
+
+			network.on("error", msg => {
+				console.log("Error from "+host+":");
+				console.log(msg);
+			});
 		});
 	}
 
@@ -84,20 +89,26 @@ export default class IRCController extends EventListener {
 			networks.push({
 				host: i,
 				nick: this.networks[i].nick,
-				chans: Object.keys(this.networks[i].chans)
+				chans: Object.keys(this.networks[i].chans),
+				opts: this.networks[i].opt
 			});
 		}
 
 		return networks;
 	}
 
-	deserialize(networks) {
+	deserialize(networks, defaults) {
 		return new Promise((resolve, reject) => {
 			let promises = networks.map((net) => {
 				return new Promise((resolve, reject) => {
 					let options = {
 						channels: net.chans
 					};
+
+					net.opts = net.opts || {};
+					for (let i in defaults) {
+						options[i] = net.opts[i] || defaults[i];
+					}
 
 					this.network_connect(net.host, net.nick, options)
 						.then(resolve, reject);
@@ -106,5 +117,52 @@ export default class IRCController extends EventListener {
 
 			Promise.all(promises).then(resolve);
 		});
+	}
+
+	getState() {
+		function user(name, mode) {
+			return new Promise((resolve, reject) => {
+				resolve({
+					name: name,
+					mode: mode
+				});
+			});
+		}
+
+		function channel(chan) {
+			return new Promise((resolve, reject) => {
+				Promise.all(Object.keys(chan.users).map(k => user(k, chan.users[k])))
+					.then(users => {
+						resolve({
+							name: chan.key,
+							users: users,
+							topic: chan.topic,
+							mode: chan.mode
+						});
+					})
+					.catch(reject);
+			});
+		}
+
+		function network(net) {
+			return new Promise((resolve, reject) => {
+				Promise.all(Object.keys(net.chans).map(k => channel(net.chans[k])))
+					.then(chans => {
+						resolve({
+							server: net.opt.server,
+							nick: net.nick,
+							//motd: net.motd,
+							userName: net.opt.userName,
+							realName: net.opt.realName,
+							channes: chans
+						});
+					})
+					.catch(reject);
+			});
+		}
+
+		return Promise.all(Object.keys(this.networks).map(key => {
+			return network(this.networks[key]);
+		}));
 	}
 }

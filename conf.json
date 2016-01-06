@@ -1,4 +1,10 @@
 {
 	"port": 8080,
-	"pass": "FooBar"
+	"pass": "FooBar",
+	"opts": {
+		"userName": "mirc",
+		"realName": "mirc IRC Client",
+		"autoRejoin": true,
+		"debug": true
+	}
 }
