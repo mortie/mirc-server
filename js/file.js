@@ -71,14 +71,14 @@ export default class File {
 		return new Promise((resolve, reject) => {
 			let stream;
 			try {
-				stream = fs.createWriseStream(this.path, options);
+				stream = fs.createWriteStream(this.path, options);
 			} catch (err) {
 				return reject(err);
 			}
 
 			//If options.fd exists, no open event will be emitted
 			//because the file is already open
-			if (options.fd) {
+			if (options && options.fd) {
 				resolve(stream);
 			} else {
 				stream.on("open", () => {

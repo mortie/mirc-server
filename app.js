@@ -23,7 +23,7 @@ let controller = new IRCController();
 setTimeout(() => controller.getState(), 10000);
 
 let comm = new Comm(conf.port, conf.pass);
-comm.on("message", (name, obj, cb) => {
+comm.on("method", (name, obj, cb) => {
 	switch (name) {
 	case "network_connect":
 		let opts = {};
@@ -53,11 +53,33 @@ comm.on("message", (name, obj, cb) => {
 	}
 });
 
-let dir = new File("db");
-dir.mkdir().then(init);
+comm.on("upload", (body, data, cb) => {
+	let lastid = db.uploads.sub("_lastid");
+
+	lastid.create().then(lastid.read("utf8").then((res) => {
+		let id = parseInt(res);
+		if (isNaN(id))
+			id = 0;
+
+		id = (id + 1).toString();
+		lastid.write(id);
+
+		db.uploads.sub(id).write(body).then(() => cb)
+	})).catch(err => cb(err));
+});
+
+comm.on("get", (req, res, args) => {
+	
+});
+
+let dbdir = new File("db");
+let updir = dbdir.sub("uploads");
+
 let db = {
-	networks: dir.sub("networks.json")
+	networks: dbdir.sub("networks.json"),
+	uploads: updir,
 }
+dbdir.mkdir().then(init);
 
 function deinit() {
 	db.networks.write(JSON.stringify(controller.serialize(), null, 4)).then(() => {
@@ -67,11 +89,10 @@ function deinit() {
 
 function init() {
 	//Create all db files
-	let promises = Object.keys(db).map((key) => {
-		return new Promise((resolve, reject) => {
-			db[key].create().then(resolve, reject);
-		});
-	});
+	let promises = [
+		db.networks.create(),
+		db.uploads.mkdir()
+	];
 
 	//Init
 	Promise.all(promises).then(() => {
